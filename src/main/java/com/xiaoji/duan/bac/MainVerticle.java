@@ -59,10 +59,12 @@ public class MainVerticle extends AbstractVerticle {
 				.allowedHeader("ai"));
 
 		router.route("/bac/backup").handler(BodyHandler.create());
+		router.route("/bac/backup/commit").handler(BodyHandler.create());
 		router.route("/bac/recover").handler(BodyHandler.create());
 		router.route("/bac/latest").handler(BodyHandler.create());
 
 		router.route("/bac/backup").handler(this::backup);
+		router.route("/bac/backup/commit").handler(this::backupcommit);
 		router.route("/bac/recover").handler(this::recover);
 		router.route("/bac/latest").handler(this::latest);
 
@@ -145,6 +147,8 @@ public class MainVerticle extends AbstractVerticle {
 			return;
 		}
 		
+		Boolean isCommit = data.getBoolean("commit", Boolean.FALSE);
+
 		System.out.println("Backup with (" + accountid + "@" + data.getLong("bts", 0L) + ")");
 		
 		// 0表示没有备份时间戳
@@ -173,7 +177,7 @@ public class MainVerticle extends AbstractVerticle {
 		if (futures.size() > 0) {
 			CompositeFuture.all(Arrays.asList(futures.toArray(new Future[futures.size()]))).setHandler(handler -> {
 				if (handler.succeeded()) {
-					savelatest(accountid, productid, productversion, backuptimestamp);
+					savelatest(accountid, productid, productversion, backuptimestamp, isCommit);
 					
 					JsonObject retdata = new JsonObject().put("bts", backuptimestamp);
 					ret.put("d", retdata);
@@ -379,14 +383,133 @@ public class MainVerticle extends AbstractVerticle {
 		});
 	}
 	
-	private void savelatest(String accountid, String productid, String productversion, Long backuptimestamp) {
-		System.out.println("Save lastest backup " + productid + " - " + productversion + " (" + accountid + "@" + backuptimestamp + ")");
-		mongodb.save("bac_latest",
+	private void backupcommit(RoutingContext ctx) {
+		JsonObject ret = new JsonObject();
+		ret.put("rc", "0");
+		ret.put("rm", "");
+		ret.put("d", new JsonObject());
+		
+		String accountid = ctx.request().getHeader("ai");
+		
+		if (accountid == null || accountid.isEmpty()) {
+			ret.put("rc", "-2");
+			ret.put("rm", "非法请求!");
+
+			ctx.response().putHeader("Content-Type", "application/json;charset=UTF-8").end(ret.encode());
+			return;
+		}
+		
+		String productid = ctx.request().getHeader("pi") == null ? "None product id." : ctx.request().getHeader("pi");
+		String productversion = ctx.request().getHeader("pv") == null ? "None product version." : ctx.request().getHeader("pv");
+		
+		JsonObject req = ctx.getBodyAsJson();
+		
+		if (req == null || req.isEmpty()) {
+			ret.put("rc", "-1");
+			ret.put("rm", "请求参数不存在, 非法请求!");
+
+			ctx.response().putHeader("Content-Type", "application/json;charset=UTF-8").end(ret.encode());
+			return;
+		}
+		
+		JsonObject data = req.getJsonObject("d");
+		
+		if (data == null || data.isEmpty()) {
+			ret.put("rc", "-1");
+			ret.put("rm", "备份数据不存在, 非法请求!");
+
+			ctx.response().putHeader("Content-Type", "application/json;charset=UTF-8").end(ret.encode());
+			return;
+		}
+		
+		Long backuptimestamp = data.getLong("bts", 0L);
+
+		if (backuptimestamp == null || backuptimestamp == 0L) {
+			ret.put("rc", "-1");
+			ret.put("rm", "备份时间戳不存在或者不正确, 非法请求!");
+
+			ctx.response().putHeader("Content-Type", "application/json;charset=UTF-8").end(ret.encode());
+			return;
+		}
+		
+		System.out.println("Backup commit with (" + accountid + "@" + backuptimestamp + ")");
+		
+		Future<JsonObject> future = Future.future();
+		
+		savelatest(future, accountid, productid, productversion, backuptimestamp);
+		
+		future.setHandler(handler -> {
+			if (handler.succeeded()) {
+				ctx.response().putHeader("Content-Type", "application/json;charset=UTF-8").end(ret.encode());
+			} else {
+				ret.put("rc", "-3");
+				ret.put("rm", handler.cause().getMessage());
+
+				ctx.response().putHeader("Content-Type", "application/json;charset=UTF-8").end(ret.encode());
+			}
+		});
+	}
+	
+	private void savelatest(Future<JsonObject> future, String accountid, String productid, String productversion, Long backuptimestamp) {
+		System.out.println("Commit backup " + productid + " - " + productversion + " (" + accountid + "@" + backuptimestamp + ")");
+		mongodb.findOne("bac_latest",
 				new JsonObject()
 				.put("productid", productid)
 				.put("productversion", productversion)
 				.put("accountid", accountid)
-				.put("backuptimestamp", backuptimestamp), save -> {});
+				.put("backuptimestamp", backuptimestamp),
+				new JsonObject(),
+				findOne -> {
+			if (findOne.succeeded()) {
+				JsonObject latest = findOne.result();
+				
+				if (latest != null && !latest.isEmpty()) {
+					latest.put("commit", true);
+					mongodb.save("bac_latest", latest, save -> {
+						if (save.succeeded()) {
+							future.complete(new JsonObject().put("save", save.result()));
+						} else {
+							future.fail(save.cause());
+						}
+					});
+				} else {
+					mongodb.save("bac_latest",
+							new JsonObject()
+							.put("productid", productid)
+							.put("productversion", productversion)
+							.put("accountid", accountid)
+							.put("backuptimestamp", backuptimestamp)
+							.put("commit", true), save -> {
+								if (save.succeeded()) {
+									future.complete(new JsonObject().put("save", save.result()));
+								} else {
+									future.fail(save.cause());
+								}
+							});
+				}
+			} else {
+				future.fail(findOne.cause());
+			}
+		});
+	}
+	
+	private void savelatest(String accountid, String productid, String productversion, Long backuptimestamp, Boolean isCommit) {
+		System.out.println("Save lastest backup " + productid + " - " + productversion + " (" + accountid + "@" + backuptimestamp + ")");
+		
+		JsonObject latest = new JsonObject()
+				.put("productid", productid)
+				.put("productversion", productversion)
+				.put("accountid", accountid)
+				.put("backuptimestamp", backuptimestamp);
+		
+		if (isCommit) {
+			latest.put("commit", true);
+		} else {
+			latest.put("commit", false);
+		}
+		
+		mongodb.save("bac_latest",
+				latest, save -> {});
 	}
 	
 	private void latest(RoutingContext ctx) {
@@ -408,7 +531,18 @@ public class MainVerticle extends AbstractVerticle {
 			return;
 		}
 		
-		mongodb.findWithOptions("bac_latest", new JsonObject().put("accountid", accountid), new FindOptions().setSort(new JsonObject().put("backuptimestamp", -1)).setLimit(1), find -> {
+		String productid = ctx.request().getHeader("pi") == null ? "None product id." : ctx.request().getHeader("pi");
+		String productversion = ctx.request().getHeader("pv") == null ? "None product version." : ctx.request().getHeader("pv");
+
+		JsonObject query = new JsonObject()
+				.put("accountid", accountid)
+				.put("productid", productid)
+				.put("productversion", productversion)
+				.put("$and", new JsonArray()
+						.add(new JsonObject().put("commit", new JsonObject().put("$exist", true)))
+						.add(new JsonObject().put("commit", new JsonObject().put("$eq", true))));
+		
+		mongodb.findWithOptions("bac_latest", query, new FindOptions().setSort(new JsonObject().put("backuptimestamp", -1)).setLimit(1), find -> {
 			if (find.succeeded()) {
 				List<JsonObject> results = find.result();
 				
