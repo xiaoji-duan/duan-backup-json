@@ -104,8 +104,8 @@ public class MainVerticle extends AbstractVerticle {
 	 * @param ctx
 	 */
 	private void backup(RoutingContext ctx) {
-		System.out.println("headers: " + ctx.request().headers());
-		System.out.println("body: " + ctx.getBodyAsString());
+//		System.out.println("headers: " + ctx.request().headers());
+//		System.out.println("body: " + ctx.getBodyAsString());
 
 		JsonObject ret = new JsonObject();
 		ret.put("rc", "0");
@@ -144,6 +144,8 @@ public class MainVerticle extends AbstractVerticle {
 			ctx.response().putHeader("Content-Type", "application/json;charset=UTF-8").end(ret.encode());
 			return;
 		}
+		
+		System.out.println("Backup with (" + accountid + "@" + data.getLong("bts", 0L) + ")");
 		
 		// 0表示没有备份时间戳
 		Long backuptimestamp = data.getLong("bts", System.currentTimeMillis()) == 0 ? Long.valueOf(System.currentTimeMillis()) : data.getLong("bts", System.currentTimeMillis());
@@ -219,7 +221,7 @@ public class MainVerticle extends AbstractVerticle {
 				}
 			} else {
 				// 不存在操作标志
-				System.out.println("Backup with no operation @" + tablename + " => " + value.encode());
+//				System.out.println("Backup with no operation @" + tablename + " => " + value.encode());
 
 				Future opFuture = Future.future();
 				backupFutures.add(opFuture);
@@ -265,8 +267,8 @@ public class MainVerticle extends AbstractVerticle {
 	}
 
 	private void recover(RoutingContext ctx) {
-		System.out.println("headers: " + ctx.request().headers());
-		System.out.println("body: " + ctx.getBodyAsString());
+//		System.out.println("headers: " + ctx.request().headers());
+//		System.out.println("body: " + ctx.getBodyAsString());
 
 		JsonObject ret = new JsonObject();
 		ret.put("rc", "0");
@@ -304,6 +306,7 @@ public class MainVerticle extends AbstractVerticle {
 		}
 		
 		Long backuptimestamp = data.getLong("bts");
+		System.out.println("Recover with (" + accountid + "@" + backuptimestamp + ")");
 		JsonArray recoverTables = data.getJsonArray("rdn");
 
 		if (backuptimestamp == null || recoverTables == null || recoverTables.isEmpty()) {
@@ -377,6 +380,7 @@ public class MainVerticle extends AbstractVerticle {
 	}
 	
 	private void savelatest(String accountid, String productid, String productversion, Long backuptimestamp) {
+		System.out.println("Save lastest backup " + productid + " - " + productversion + " (" + accountid + "@" + backuptimestamp + ")");
 		mongodb.save("bac_latest",
 				new JsonObject()
 				.put("productid", productid)
@@ -386,8 +390,8 @@ public class MainVerticle extends AbstractVerticle {
 	}
 	
 	private void latest(RoutingContext ctx) {
-		System.out.println("headers: " + ctx.request().headers());
-		System.out.println("body: " + ctx.getBodyAsString());
+//		System.out.println("headers: " + ctx.request().headers());
+//		System.out.println("body: " + ctx.getBodyAsString());
 
 		JsonObject ret = new JsonObject();
 		ret.put("rc", "0");
@@ -409,8 +413,10 @@ public class MainVerticle extends AbstractVerticle {
 				List<JsonObject> results = find.result();
 				
 				if (results == null || results.isEmpty()) {
+					System.out.println("No latest backup version.");
 					ctx.response().putHeader("Content-Type", "application/json;charset=UTF-8").end(ret.encode());
 				} else {
+					System.out.println("Latest backup version (" + accountid + "@" + results.get(0).getLong("backuptimestamp") + ")");
 					JsonObject retdata = new JsonObject();
 					retdata.put("bts", results.get(0).getLong("backuptimestamp"));
 					
