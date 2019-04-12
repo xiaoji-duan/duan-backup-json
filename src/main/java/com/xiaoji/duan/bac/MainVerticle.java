@@ -513,8 +513,8 @@ public class MainVerticle extends AbstractVerticle {
 	}
 	
 	private void latest(RoutingContext ctx) {
-//		System.out.println("headers: " + ctx.request().headers());
-//		System.out.println("body: " + ctx.getBodyAsString());
+		System.out.println("headers: " + ctx.request().headers());
+		System.out.println("body: " + ctx.getBodyAsString());
 
 		JsonObject ret = new JsonObject();
 		ret.put("rc", "0");
@@ -534,12 +534,14 @@ public class MainVerticle extends AbstractVerticle {
 		String productid = ctx.request().getHeader("pi") == null ? "None product id." : ctx.request().getHeader("pi");
 		String productversion = ctx.request().getHeader("pv") == null ? "None product version." : ctx.request().getHeader("pv");
 
+		System.out.println("Get latest backup " + productid + " - " + productversion + " (" + accountid + "@?)");
+
 		JsonObject query = new JsonObject()
-				.put("accountid", accountid)
-				.put("productid", productid)
-				.put("productversion", productversion)
 				.put("$and", new JsonArray()
-						.add(new JsonObject().put("commit", new JsonObject().put("$exist", true)))
+						.add(new JsonObject().put("accountid", accountid))
+						.add(new JsonObject().put("productid", productid))
+						.add(new JsonObject().put("productversion", productversion))
+						.add(new JsonObject().put("commit", new JsonObject().put("$exists", true)))
 						.add(new JsonObject().put("commit", new JsonObject().put("$eq", true))));
 		
 		mongodb.findWithOptions("bac_latest", query, new FindOptions().setSort(new JsonObject().put("backuptimestamp", -1)).setLimit(1), find -> {
@@ -559,6 +561,8 @@ public class MainVerticle extends AbstractVerticle {
 					ctx.response().putHeader("Content-Type", "application/json;charset=UTF-8").end(ret.encode());
 				}
 			} else {
+				find.cause().printStackTrace();
+				
 				ret.put("rc", "-3");
 				ret.put("rm", find.cause().getMessage());
 
