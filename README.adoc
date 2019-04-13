@@ -76,5 +76,5 @@ response
   rc: 处理结果状态代码（0为成功）
   rm: 处理结果消息内容
   d: 返回数据
-    
+    dataset_name!JsonArray: 恢复数据，多个表或数据结构，返回多个，dataset_name与request中的rdn数据一致
 ```
