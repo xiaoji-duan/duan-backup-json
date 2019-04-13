@@ -1,8 +1,12 @@
-= Bac
+= 数据备份 for Json
 
 image:https://img.shields.io/badge/vert.x-3.6.3-purple.svg[link="https://vertx.io"] image:https://img.shields.io/badge/code@duan-bac-brightgreen.svg[link="https://www.guobaa.com"]
 
-This application was generated using http://start.vertx.io
+为产品客户端用户提供线上数据备份与恢复功能
+
+* 根据产品标识符，产品版本和用户标识符存储备份数据，生成备份时间戳
+* 通过产品标识符，产品版本和用户标识符查询最新备份时间戳
+* 通过产品标识符，产品版本，用户标识符和备份时间戳拉取备份数据，用于恢复
 
 == Building
 
