@@ -53,13 +53,11 @@ request
     ai: 用户账号
   body
     d: 提交备份数据
-      bts!Long: 备份时间戳（可选）
-      commit!Boolean: 提交备份（可选）
+      bts!Long: 备份时间戳
 response
   rc: 处理结果状态代码（0为成功）
   rm: 处理结果消息内容
-  d: 返回数据
-    bts!Long: 备份时间戳（本次备份的时间戳）
+  d: 返回数据（忽略）
 、、、
 
 * 查询备份
