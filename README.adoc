@@ -2,7 +2,10 @@
 
 image:https://img.shields.io/badge/vert.x-3.6.3-purple.svg[link="https://vertx.io"] image:https://img.shields.io/badge/code@duan-bac-brightgreen.svg[link="https://www.guobaa.com"]
 
-为产品客户端用户提供线上数据备份与恢复功能
+可以为支持离线功能的客户端产品（手机App，智能终端，桌面应用程序等）用户,提供线上数据备份与恢复功能
+
+== 案例
+1. 为冥王星日历App提供个性化参数、日程、自定义日历、提醒、以及联系人信息进行数据备份和恢复
 
 == 概要
 * 根据产品标识符，产品版本和用户标识符存储备份数据，生成备份时间戳
