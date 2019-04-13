@@ -120,6 +120,7 @@ public class MainVerticle extends AbstractVerticle {
 			ret.put("rc", "-2");
 			ret.put("rm", "非法请求!");
 
+			System.out.println(ret.encode());
 			ctx.response().putHeader("Content-Type", "application/json;charset=UTF-8").end(ret.encode());
 			return;
 		}
@@ -133,6 +134,7 @@ public class MainVerticle extends AbstractVerticle {
 			ret.put("rc", "-1");
 			ret.put("rm", "请求参数不存在, 非法请求!");
 
+			System.out.println(ret.encode());
 			ctx.response().putHeader("Content-Type", "application/json;charset=UTF-8").end(ret.encode());
 			return;
 		}
@@ -143,6 +145,7 @@ public class MainVerticle extends AbstractVerticle {
 			ret.put("rc", "-1");
 			ret.put("rm", "备份数据不存在, 非法请求!");
 
+			System.out.println(ret.encode());
 			ctx.response().putHeader("Content-Type", "application/json;charset=UTF-8").end(ret.encode());
 			return;
 		}
@@ -182,12 +185,15 @@ public class MainVerticle extends AbstractVerticle {
 					JsonObject retdata = new JsonObject().put("bts", backuptimestamp);
 					ret.put("d", retdata);
 					
+					System.out.println(ret.encode());
 					ctx.response().putHeader("Content-Type", "application/json;charset=UTF-8").end(ret.encode());
 				} else {
+					System.out.println(ret.encode());
 					ctx.response().putHeader("Content-Type", "application/json;charset=UTF-8").end(ret.encode());
 				}
 			});
 		} else {
+			System.out.println(ret.encode());
 			ctx.response().putHeader("Content-Type", "application/json;charset=UTF-8").end(ret.encode());
 		}
 	}
