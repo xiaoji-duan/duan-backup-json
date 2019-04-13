@@ -43,7 +43,7 @@ response
 
 * 提交备份
 
-、、、
+```
 post /bac/backup/commit
 request
   header
@@ -58,7 +58,7 @@ response
   rc: 处理结果状态代码（0为成功）
   rm: 处理结果消息内容
   d: 返回数据（忽略）
-、、、
+```
 
 * 查询备份
 
