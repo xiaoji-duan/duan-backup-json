@@ -1,31 +1,102 @@
-= Bac
+= 数据备份 for Json
 
-image:https://img.shields.io/badge/vert.x-3.6.3-purple.svg[link="https://vertx.io"]
+image:https://img.shields.io/badge/vert.x-3.6.3-purple.svg[link="https://vertx.io"] image:https://img.shields.io/badge/code@duan-bac-brightgreen.svg[link="https://www.guobaa.com"]
 
-This application was generated using http://start.vertx.io
+可以为支持离线功能的客户端产品（手机App，智能终端，桌面应用程序等）用户,提供线上数据备份与恢复功能
 
-== Building
+== 案例
+1. 为冥王星日历App提供个性化参数、日程、自定义日历、提醒、以及联系人信息进行数据备份和恢复
 
-To launch your tests:
+== 概要
+* 根据产品标识符，产品版本和用户标识符存储备份数据，生成备份时间戳
+* 通过产品标识符，产品版本和用户标识符查询最新备份时间戳
+* 通过产品标识符，产品版本，用户标识符和备份时间戳拉取备份数据，用于恢复
+
+== 功能
+* 支持一次备份多次请求
+* 支持多表或者多数据结构数据备份
+* 支持单表分多次备份请求
+* 支持由客户端或者服务端生成备份时间戳
+* 支持最新备份查询
+* 支持一次或者多次请求拉取备份数据进行恢复
+* 只支持Json格式数据备份
+
+== 开始使用
+
+* 备份
 ```
-./mvnw clean test
+post /bac/backup
+request
+  header
+    lt: 登录token
+    pi: 产品识别符
+    pv: 产品版本
+    ai: 用户账号
+  body
+    d: 备份数据
+      bts!Long: 备份时间戳（可选）
+      commit!Boolean: 提交备份（可选）
+      dataset_name!JsonArray: 备份数据，dataset_name为备份数据表名或数据结构名，备份多个表或数据结构，放入多个dataset即可
+response
+  rc: 处理结果状态代码（0为成功）
+  rm: 处理结果消息内容
+  d: 返回数据
+    bts!Long: 备份时间戳（本次备份的时间戳）
 ```
 
-To package your application:
+* 提交备份
+
 ```
-./mvnw clean package
+post /bac/backup/commit
+request
+  header
+    lt: 登录token
+    pi: 产品识别符
+    pv: 产品版本
+    ai: 用户账号
+  body
+    d: 提交备份数据
+      bts!Long: 备份时间戳
+response
+  rc: 处理结果状态代码（0为成功）
+  rm: 处理结果消息内容
+  d: 返回数据（忽略）
 ```
 
-To run your application:
+* 查询备份
+
 ```
-./mvnw clean exec:java
+get /bac/latest
+request
+  header
+    lt: 登录token
+    pi: 产品识别符
+    pv: 产品版本
+    ai: 用户账号
+response
+  rc: 处理结果状态代码（0为成功）
+  rm: 处理结果消息内容
+  d: 返回数据
+    bts!Long: 备份时间戳（最后一次备份的时间戳）
 ```
 
-== Help
+* 恢复
 
-* https://vertx.io/docs/[Vert.x Documentation]
-* https://stackoverflow.com/questions/tagged/vert.x?sort=newest&pageSize=15[Vert.x Stack Overflow]
-* https://groups.google.com/forum/?fromgroups#!forum/vertx[Vert.x User Group]
-* https://gitter.im/eclipse-vertx/vertx-users[Vert.x Gitter]
-
-
+```
+get /bac/recover
+request
+  header
+    lt: 登录token
+    pi: 产品识别符
+    pv: 产品版本
+    ai: 用户账号
+  body
+    d: 备份数据
+      bts!Long: 备份时间戳
+      rdn!JsonArray: 恢复数据表名或数据结构名称，和备份时dataset_name一一对应，可设置一个或多个
+response
+  rc: 处理结果状态代码（0为成功）
+  rm: 处理结果消息内容
+  d: 返回数据
+    dataset_name!JsonArray: 恢复数据，多个表或数据结构，返回多个，dataset_name与request中的rdn数据一致
+```
