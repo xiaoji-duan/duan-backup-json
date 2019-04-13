@@ -70,12 +70,11 @@ request
     ai: 用户账号
   body
     d: 备份数据
-      bts!Long: 备份时间戳（可选）
-      commit!Boolean: 提交备份（可选）
-      dataset_name!JsonArray: 备份数据，dataset_name为备份数据表名或数据结构名，备份多个表或数据结构，放入多个dataset即可
+      bts!Long: 备份时间戳
+      rdn!JsonArray: 恢复数据表名或数据结构名称，和备份时dataset_name一一对应，可设置一个或多个
 response
   rc: 处理结果状态代码（0为成功）
   rm: 处理结果消息内容
   d: 返回数据
-    bts!Long: 备份时间戳（本次备份的时间戳）
+    
 ```
