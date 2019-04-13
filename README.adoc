@@ -12,7 +12,31 @@ image:https://img.shields.io/badge/vert.x-3.6.3-purple.svg[link="https://vertx.i
 == 功能
 * 支持一次备份多次请求
 * 支持多表或者多数据结构数据备份
+* 支持单表分多次备份请求
 * 支持由客户端或者服务端生成备份时间戳
 * 支持最新备份查询
 * 支持一次或者多次请求拉取备份数据进行恢复
 * 只支持Json格式数据备份
+
+== 开始使用
+
+* 备份
+```
+post /bac/backup
+request
+  header
+    lt: 登录token
+    pi: 产品识别符
+    pv: 产品版本
+    ai: 用户账号
+  body
+    d: 备份数据
+      bts!Long: 备份时间戳（可选）
+      commit!Boolean: 提交备份（可选）
+      dataset_name!JsonArray: 备份数据，dataset_name为备份数据表名或数据结构名，备份多个表或数据结构，放入多个dataset即可
+response
+  rc: 处理结果状态代码（0为成功）
+  rm: 处理结果消息内容
+  d: 返回数据
+    bts!Long: 备份时间戳（本次备份的时间戳）
+```
