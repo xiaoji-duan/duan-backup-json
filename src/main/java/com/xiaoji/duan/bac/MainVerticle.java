@@ -546,7 +546,7 @@ public class MainVerticle extends AbstractVerticle {
 				.put("$and", new JsonArray()
 						.add(new JsonObject().put("accountid", accountid))
 						.add(new JsonObject().put("productid", productid))
-						.add(new JsonObject().put("productversion", productversion))
+						//.add(new JsonObject().put("productversion", productversion))
 						.add(new JsonObject().put("commit", new JsonObject().put("$exists", true)))
 						.add(new JsonObject().put("commit", new JsonObject().put("$eq", true))));
 		
